@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>简历工作台 · 审阅</title><link rel="stylesheet" href="/style.css"><script defer src="/app.js"></script></head>
+<body><header><span class="brand">履历 / RESUME</span><span id="case"></span></header><main>
+<div class="intro"><p class="eyebrow">从材料，到你的第一份简历</p><h1>让每一段经历<br>都有据可循。</h1><p>先核对事实，再整理表达。确认前，你可以随时修改正文和版式。</p><p id="sample" class="notice" hidden>当前为虚构样例，用于验证工作流。</p></div>
+<nav aria-label="制作步骤"><span>01 整理材料</span><strong>02 核对与编辑</strong><span>03 导出与检查</span></nav>
+<div class="layout"><section class="editor"><h2>01 / 事实与来源</h2><details><summary>展开原材料中的事实依据</summary><div id="facts"></div></details>
+<h2>02 / 待确认项 <span id="count"></span></h2><div id="questions"></div>
+<h2>03 / 简历正文</h2><p class="hint">编辑下方内容，右侧会同步展示版式示意。JSON 中的 fact_ids 用于保留来源；自行补写的内容请先核实。</p><label for="resume">可编辑正文 JSON</label><textarea id="resume" spellcheck="false"></textarea>
+<h2>04 / 选择版式</h2><div class="templates" role="group" aria-label="简历模板">
+<label><input type="radio" name="template" value="classic"><b>经典细线</b><small>传统单栏 · 标题细线</small></label>
+<label><input type="radio" name="template" value="minimal"><b>简洁文本</b><small>居中姓名 · 清晰阅读</small></label>
+<label><input type="radio" name="template" value="technical"><b>技术项目</b><small>单栏层次 · 项目重点</small></label></div>
+<div class="options"><label>使用方式 <select id="mode"><option value="print">纸质投递</option><option value="digital">电子投递</option></select></label><label>纸张 <select id="paper"><option>A4</option><option>Letter</option></select></label></div>
+<div class="actions"><button id="save" class="secondary">保存修改</button><button id="approve">确认正文并允许导出</button></div><p id="status" role="status" aria-live="polite"></p>
+</section><aside><div class="preview-heading"><h2>版式预览</h2><span>示意 · 最终分页以导出为准</span></div><article id="preview" class="paper"></article><p class="hint">选择或预览模板不会自动确认正文。导出后仍需查看全部页面。</p></aside></div></main><footer>资料仅在本机审阅 · 此页面不调用模型</footer></body></html>

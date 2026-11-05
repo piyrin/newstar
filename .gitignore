@@ -2,3 +2,11 @@
 /airflow/.env
 
 /airflow/logs/
+
+# Personal resume materials, model credentials, and generated versions.
+/airflow/resume_workspace/
+/airflow/resume/.env
+__pycache__/
+*.pyc
+/tmp/
+.venv/

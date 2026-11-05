@@ -1,0 +1,32 @@
+# Explicit opt-in: docker compose -f docker-compose.yaml -f docker-compose.resume.yaml ...
+x-resume-common: &resume-common
+  image: newstar-airflow-resume:3.3.2
+  build:
+    context: .
+    dockerfile: resume/Dockerfile
+  environment:
+    PYTHONPATH: /opt/airflow/dags
+    RESUME_WORKSPACE: /opt/airflow/resume_workspace
+    DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+    DEEPSEEK_MODEL: ${DEEPSEEK_MODEL:-deepseek-flash}
+    RESUME_DEFAULT_CASE: ${RESUME_DEFAULT_CASE:-demo}
+    RESUME_DEFAULT_TARGET: ${RESUME_DEFAULT_TARGET:-}
+    RESUME_DEFAULT_MODE: ${RESUME_DEFAULT_MODE:-deepseek}
+  volumes:
+    - ./resume_workspace:/opt/airflow/resume_workspace
+
+services:
+  airflow-apiserver:
+    <<: *resume-common
+  airflow-scheduler:
+    <<: *resume-common
+  airflow-dag-processor:
+    <<: *resume-common
+  airflow-worker:
+    <<: *resume-common
+  airflow-triggerer:
+    <<: *resume-common
+  airflow-init:
+    <<: *resume-common
+  airflow-cli:
+    <<: *resume-common

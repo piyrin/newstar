@@ -1,0 +1,5 @@
+*
+!resume/
+resume/*
+!resume/Dockerfile
+!resume/requirements.txt
