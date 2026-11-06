@@ -1,11 +1,54 @@
 # 从原始材料制作自己的简历
 
-本工作流把“材料变化后整理”和“经确认后导出”拆成两个 DAG。`resume_prepare` 每半小时检查指定材料目录，也支持手动触发；`resume_export` 由人工或自然语言入口触发，但始终要求有效的人工确认。当前尚无用户真实材料；内置样例完全虚构，用来验证程序，不能作为个人简历投递。
+## 从 Airflow 主流程开始
+
+直接触发 `resume_prepare`。新建案例可留空，或填写 `5` 这样的新名称。主流程先执行 `open_material_page` 发布专用页面，再在 `await_materials` 等待网页提交。导入文件或GitHub并点击“提交材料并继续”后，同一次运行继续 `snapshot_materials → extract_materials → organize_facts → write_draft → publish_review`。
+
+已有材料时直接进入处理。需要先打开网页更新材料时，勾选触发参数“先打开材料填写页”。材料页中“结束本次等待”可结束对应的等待运行。自动打开浏览器依赖本机引导程序，工作台同时列出等待材料的入口。
+
+材料等待允许16个活动运行。归档、提取、整理、起草和发布使用单槽 `resume_preparation` 池，起草结果绑定输入摘要缓存。初始化新环境后创建该池。
+
+```powershell
+& $dockerExe compose -f docker-compose.yaml -f docker-compose.resume.yaml exec -T airflow-worker airflow pools set resume_preparation 1 "Serial resume preparation tasks"
+```
+
+定时运行使用 `RESUME_DEFAULT_CASE` 配置的案例进行检查。重复且已处理的材料会复用原有审阅包，首次上传与材料提交为独立的明确步骤。
+
+## 完善信息与管理草稿
+
+审阅页提供姓名、求职方向、手机、邮箱、主页、意向城市、实习时间及学校、院系、专业、学历、起止时间、GPA、课程表单。可选信息按实际情况留空，填写后同步正文与预览。项目、技能等内容可在独立编辑项中修改，高级JSON保留完整数据入口。
+
+“需要你补充或核对”显示简短清单。同一材料的同类校验问题合并，原始问题、引用事实与处理记录保存在折叠依据中。项目经本人核实后可整理为项目条目，名称、职责或技术栈、时间、链接与正文分别编辑。
+
+近期草稿每行显示材料案例、更新时间和删除按钮。删除采用 `resume_workspace/deleted_drafts/<run_key>.json` 标记，可在“已删除草稿”恢复。操作会结束精确关联的等待运行，Airflow中主动结束的运行记为failed。正在进行材料解析、模型调用或文件生成时会提示稍后重试。恢复后可重新审阅并提交生成。
+
+参考文档补充的手填内容与原始材料事实分开保存，修改后的内容需重新确认。修改前的审阅版本可保存在对应 `reviews/<run_key>/history/`。
+
+## 推荐入口：本机简历工作台
+
+打开 **http://localhost:8765**。服务已加入 Compose，Docker/Airflow 启动后会自动运行，无需每次在 VS Code 启动审阅服务或手动触发导出。
+
+1. 在“导入你的材料”拖入或选择多份文件，选择案例或新建案例，点击“导入到本机”。同名更新保留旧版备份，支持 TXT/MD/DOCX/PDF/PNG/JPG，每文件5MB、每案例20MB/100文件。也可以继续使用 `resume_workspace/inputs/<case_id>/` 目录。
+2. 选择材料案例，填写目标岗位，点击“开始整理”。`demo + offline` 仅用于原样虚构演示；真实材料使用 DeepSeek。
+3. 页面显示整理进度。完成后在近期草稿点击“进入审阅”。从 Airflow 触发也可以回到工作台查看，`publish_review` 日志会打印直接审阅链接。
+4. 按材料分组核对事实，处理问题，修改正文。姓名、邮箱、手机和目标方向可在独立输入框填写，邮箱、手机与照片可留空。可上传 PNG/JPG 照片，最多2MB、1000万像素。核实项目后可点击“采用已核实项目到正文”。选择细线标题、灰条标题或浅色卡片，实际分页以 PDF 为准。
+5. 点击“确认并继续生成Word/PDF”，明确确认当前正文/模板。工作台自动安排同一个 `resume_prepare` DAG 的导出运行，复用准备结果，执行冻结、Word、PDF和页面检查。
+6. 在“05 / 导出与下载”查看进度、失败信息、输出目录、Word/PDF 下载按钮和所有页面预览。逐页核实后可勾选并确认最终版本。
+
+物理文件保存于 `D:\code\newstar\airflow\resume_workspace\outputs\<export_key>\`，页面会显示完整目录。修改后需重新确认导出；下载区显示的是已经确认导出的版本。接口校验确认记录、文件归属和产物摘要，失败或未检查文件不作为成品提供。
+
+主流程 `resume_prepare` 包含整理、发布审阅、确认检查、生成Word/PDF和页面检查。`await_review` 检查本次运行是否绑定有效人工确认。尚未确认时跳过后续导出并结束运行，工作台保留审阅待办。确认后自动创建绑定当前内容的新运行，复用准备结果并完成导出。人工审阅期间释放DAG运行名额，其他材料可以继续处理。旧版本草稿兼容独立 `resume_export`。工作台仅发布在 `127.0.0.1:8765`，主页面同源获取临时会话，接口要求令牌并校验 Host/Origin。
+
+重复材料会跳过提取、事实整理和起草，`publish_review` 仍发布审阅链接。未绑定人工确认的检查运行会跳过后续导出，正常结束。确认绑定导出运行和内容摘要，修改后需要重新确认。网页导入仅发送到本机，DeepSeek模式开始整理时提取文字才发送给模型。旧文件备份位于 `resume_workspace/input_history/<case_id>/<request_id>/`。
+
+管理服务：使用两个 Compose 文件执行 `up -d resume-portal`；排查时执行 `logs --tail 60 resume-portal`。模板来源见 [TEMPLATE_SOURCES.md](../dags/resume_flow/vendor/TEMPLATE_SOURCES.md)，本轮验证见 [VERIFICATION-20261105.md](VERIFICATION-20261105.md)。
+
+`resume_prepare` 每半小时检查指定材料目录，也支持手动触发。网页确认后自动启动同一DAG的导出运行，`resume_export` 保留为旧版兼容入口。内置样例完全虚构，用来验证程序。用户导入的真实材料需逐项审阅后确认。
 
 ```text
-resume_prepare: snapshot_materials → extract_materials → organize_facts → write_draft → publish_review
+resume_prepare: snapshot_materials → extract_materials → organize_facts → write_draft → publish_review → await_review
 人工审阅: 核对原文 → 处理问题 → 修改正文 → 选模板 → 明确确认
-resume_export: verify_and_freeze → render_word → export_pdf → check_pages
+同一运行继续: verify_and_freeze → render_word → export_pdf → check_pages
 人工验收: 查看全部 page-N.png → 明确确认最终版
 ```
 
@@ -63,13 +106,13 @@ Set-Location D:\code\newstar
 python airflow/resume/resume_cli.py review --run-key demo-run
 ```
 
-在浏览器打开命令打印的完整链接（含临时令牌）。页面显示事实来源、待确认项、正文 JSON 与三种版式示意。没有姓名、联系方式或核心经历时，先补材料并用新 run_key 运行，或在正文中补充经你核实的信息。JSON 的栏目顺序就是 Word 栏目顺序；改动后预览同步更新。
+在浏览器打开命令打印的完整链接（含临时令牌）。页面显示事实来源、分组待确认项、基本信息表单、高级正文 JSON 与三种版式示意。姓名为必填项，邮箱、手机、目标方向和照片可留空。核心经历可补材料后重新整理，或在正文中补充经你核实的信息。JSON 的栏目顺序就是 Word 栏目顺序，改动后预览同步更新。
 
-- 每个问题选择“已核实 / 已补充”或“明确省略”，并填写依据/原因。标记省略的事实若仍被正文 fact_ids 引用，必须先移除相应条目。
-- 对于自动省略的团队项目/OCR 信息，可在核实后手动把真实个人职责写入正文，并保留相关 fact_ids；程序不替你证明归属。
-- 选择 classic（经典细线）、minimal（简洁文本）或 technical（技术项目），以及纸张、纸质/电子模式。首版文字版不支持照片。
+- 同一材料中的同类问题合并显示，展开的事实包含值、引用片段与来源。每组选择“已核实 / 已补充”或“明确省略”。核实说明可空，省略原因提供可编辑默认值。标记省略的事实若仍被正文 fact_ids 引用，必须先移除相应条目。
+- 对于自动省略的团队项目/OCR 信息，先核实原文和本人职责。项目组可点击“采用已核实项目到正文”，再在高级正文中调整真实个人职责。通用处理说明单独保存，联系方式请填入基本信息表单。
+- 选择 classic（细线标题）、minimal（灰条标题）或 technical（浅色卡片），以及纸张、纸质/电子模式。三种模板均支持可选照片，照片内容也绑定人工确认版本。
 - “保存修改”不会允许导出。只有“确认正文并允许导出”才生成与材料、事实、问题处理、正文和模板摘要绑定的确认记录。
-- 这份示意不是 Word 最终分页，technical 与 classic 的区别较小；三者均为自有预设。
+- 三套版式按用户提供的截图重建，均为全宽正文。Word/PDF 使用可编辑表格呈现浅色卡片，边角为矩形，网页保留圆角。模板版次更新后需重新确认导出。
 - 关闭终端或 Ctrl+C 可停止服务。每次启动生成新令牌，旧令牌失效。不得把审阅服务暴露公网。
 
 不用页面时，可编辑 `reviews/<run_key>/resume.json`、`questions.json`、`selection.json` 后执行：
@@ -113,7 +156,11 @@ python airflow/resume/resume_cli.py accept --export-key demo-export --confirm-al
 - `.pdf`：有文字层直接读取，文字很少的页面尝试 OCR。
 - `.png` / `.jpg` / `.jpeg`：本地中英文 OCR；务必对照原图核实。
 
-姓名和至少一种联系方式需最终补齐；目标岗位放 DAG 的 target，JD 可选。项目资料请写清本人负责部分，不会因仓库存在就认定全部功能由本人实现。首版只读放入材料目录的说明文件，不自动扫描整个代码盘。复杂表格、旧版 .doc、加密文档、压缩包不支持，报告中明确列出。
+姓名需填写，联系方式和照片可按需要留空。目标岗位放 DAG 的 target，JD 可选。项目资料请写清本人负责部分。复杂表格、旧版 .doc、加密文档、压缩包不支持，报告中明确列出。
+
+工作台首页另有“导入 GitHub 仓库”表单。选择材料案例，粘贴 `https://github.com/用户名/仓库名`，可填写分支和本人贡献说明，再点击导入。导入结果作为本机材料，之后点击“开始整理”。目前读取仓库基本信息、根目录文件清单、README 和常见依赖配置文件，记录固定 commit、文件链接及摘要。每文件64KB、最多9份文档、总计200KB，跳过内容会列在导入结果中。仓库内容与本人贡献需在审阅时核实。
+
+公开仓库可直接读取。私有仓库需要在服务端配置有相应权限的 `GITHUB_TOKEN`，再重新创建 `resume-portal` 容器使环境变量生效。当前实际联网验证覆盖公开仓库，私有仓库尚未实测。
 
 真实运行的参数示例：
 

@@ -72,6 +72,12 @@ def snapshot(workspace: Path, case_id: str, run_key: str, target: str = '', jd: 
     source = inside(workspace, 'inputs', case_id)
     if not source.is_dir():
         raise ValueError('材料目录不存在，请先放入材料')
+    if (source / '.importing').exists():
+        raise RuntimeError('材料正在导入，请导入完成后重试')
+    revision = source / '.material-revision'
+    revision_before = revision.read_bytes() if revision.exists() else None
+    if revision_before is not None and json.loads(revision_before).get('state') not in ('complete', 'rolled_back'):
+        raise RuntimeError('材料导入尚未完成恢复，请先检查导入状态')
     destination.parent.mkdir(parents=True, exist_ok=True)
     temporary = Path(tempfile.mkdtemp(prefix='.snapshot-', dir=destination.parent))
     files, issues, total, seen = [], [], 0, 0
@@ -85,6 +91,8 @@ def snapshot(workspace: Path, case_id: str, run_key: str, target: str = '', jd: 
                     issues.append({'source': directory_path.relative_to(source).as_posix(),
                                    'reason': '已跳过链接或隐藏目录'})
             for name in sorted(names):
+                if name in ('.importing', '.material-revision'):
+                    continue
                 path = Path(directory) / name
                 relative = path.relative_to(source).as_posix()
                 seen += 1
@@ -106,6 +114,9 @@ def snapshot(workspace: Path, case_id: str, run_key: str, target: str = '', jd: 
                 total += len(data)
                 files.append({'source': relative, 'bytes': len(data),
                               'sha256': hashlib.sha256(data).hexdigest()})
+        revision_after = revision.read_bytes() if revision.exists() else None
+        if (source / '.importing').exists() or revision_before != revision_after:
+            raise RuntimeError('复制期间材料发生导入，请重试新运行')
         manifest = {'schema_version': 1, 'config': config, 'files': files, 'issues': issues}
         manifest['snapshot_hash'] = digest(manifest)
         write_json(temporary / 'manifest.json', manifest)

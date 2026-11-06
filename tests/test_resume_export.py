@@ -7,13 +7,37 @@ from unittest.mock import patch
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'airflow' / 'dags'))
 from resume_flow.storage import read_json, write_json, review_dir
 from resume_flow.review import approve
-from resume_flow.export import freeze_export, export_resume, accept_visual, output_dir
+from resume_flow.export import freeze_export, export_resume, accept_visual, output_dir, create_docx
 import test_resume_review as review_tests
 
 
 class ExportTests(unittest.TestCase):
     setUp = review_tests.ReviewTests.setUp
     choose = review_tests.ReviewTests.choose
+    def test_repeated_export_steps_reuse_verified_artifacts_without_rewriting_acceptance(self):
+        from resume_flow.export import run_export_step
+        from resume_flow.storage import file_hash
+        self.choose()
+        approve(self.ws, 'run1')
+        freeze_export(self.ws, 'run1', 'export1')
+        folder = output_dir(self.ws, 'export1')
+        for name in ('resume.docx', 'resume.pdf', 'page-1.png'):
+            (folder / name).write_bytes(name.encode())
+        record = read_json(folder / 'input.json')
+        write_json(folder / 'report.json', {'state': 'waiting_visual', 'ok': True, 'pages': 1,
+                    'approval_hash': record['approval_hash'],
+                    'artifact_hashes': {name: file_hash(folder / name)
+                        for name in ('resume.docx', 'resume.pdf', 'page-1.png')}})
+        accept_visual(self.ws, 'export1')
+        before = {p.name: p.read_bytes() for p in folder.iterdir() if p.is_file()}
+        with patch('resume_flow.export.create_docx', side_effect=AssertionError('rewrote completed export')) as render:
+            run_export_step(self.ws, 'export1', render)
+        self.assertEqual(before, {p.name: p.read_bytes() for p in folder.iterdir() if p.is_file()})
+        (folder / 'resume.pdf').write_bytes(b'tampered')
+        with patch('resume_flow.export.create_docx') as render:
+            run_export_step(self.ws, 'export1', render)
+            render.assert_called_once()
+
     def test_requires_approval_and_frozen_export_keeps_content(self):
         with self.assertRaises(ValueError):
             freeze_export(self.ws, 'run1', 'export1')
@@ -37,6 +61,17 @@ class ExportTests(unittest.TestCase):
                 export_resume(self.ws, 'run1', 'export1')
         report = read_json(output_dir(self.ws, 'export1') / 'report.json')
         self.assertEqual(report['state'], 'failed')
+
+    def test_old_frozen_template_cannot_silently_render_with_new_layout(self):
+        self.choose()
+        approve(self.ws, 'run1')
+        freeze_export(self.ws, 'run1', 'export1')
+        path = output_dir(self.ws, 'export1') / 'input.json'
+        record = read_json(path)
+        record['template_version'] = 'old-template'
+        write_json(path, record)
+        with self.assertRaisesRegex(ValueError, '模板版本已更新'):
+            create_docx(self.ws, 'export1')
 
     def test_visual_accept_rejects_unchecked_or_changed_files(self):
         directory = output_dir(self.ws, 'export1')

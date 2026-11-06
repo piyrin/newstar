@@ -7,8 +7,9 @@ from pathlib import Path
 
 from .review import now, verify_approval
 from .storage import digest, file_hash, inside, read_json, review_dir, validate_id, write_json
-from .vendor.build_resume import build_resume
+from .vendor.build_resume import build_resume, TEMPLATE_VERSION
 from .vendor.check_resume import check, compact
+from .drafts import draft_guard, ensure_active
 
 
 def output_dir(workspace, export_key):
@@ -29,11 +30,14 @@ def freeze_export(workspace, run_key, export_key):
     try:
         for name in ('resume.json', 'selection.json', 'questions.json'):
             (temporary / name).write_bytes((review / name).read_bytes())
+        if read_json(temporary / 'resume.json').get('photo') == 'photo.jpg':
+            (temporary / 'photo.jpg').write_bytes((review / 'photo.jpg').read_bytes())
         if verify_approval(workspace, run_key) != approval:
             raise ValueError('复制期间确认版本改变，请重新导出')
         hashes = {p.name: file_hash(p) for p in temporary.iterdir()}
         write_json(temporary / 'input.json', {'run_key': run_key, 'approval_hash': approval['content_hash'],
-                                              'synthetic': approval['synthetic'], 'input_hashes': hashes})
+                                              'synthetic': approval['synthetic'], 'input_hashes': hashes,
+                                              'template_version': TEMPLATE_VERSION})
         os.rename(temporary, folder)
     finally:
         if temporary.exists():
@@ -50,7 +54,9 @@ def verify_export_input(folder):
 
 def create_docx(workspace, export_key):
     folder = output_dir(workspace, export_key)
-    verify_export_input(folder)
+    record = verify_export_input(folder)
+    if record.get('template_version') != TEMPLATE_VERSION:
+        raise ValueError('导出模板版本已更新，请重新确认并使用新的导出标识')
     with tempfile.TemporaryDirectory(prefix='.docx-', dir=folder) as tmp:
         path = Path(tmp) / 'resume.docx'
         build_resume(folder / 'resume.json', path, selection=folder / 'selection.json')
@@ -120,10 +126,27 @@ def export_resume(workspace, run_key, export_key):
 def run_export_step(workspace, export_key, function):
     folder = output_dir(workspace, export_key)
     try:
-        return function(workspace, export_key)
+        record = verify_export_input(folder)
+        with draft_guard(workspace, record['run_key'], timeout=30):
+            ensure_active(workspace, record['run_key'])
+            report_path = folder / 'report.json'
+            if report_path.is_file():
+                report = read_json(report_path)
+                artifacts = report.get('artifact_hashes', {})
+                expected = {'resume.docx', 'resume.pdf'} | {
+                    f'page-{index}.png' for index in range(1, report.get('pages', 0) + 1)}
+                if (report.get('ok') and report.get('state') == 'waiting_visual'
+                        and report.get('approval_hash') == record['approval_hash']
+                        and artifacts and set(artifacts) == expected
+                        and all(inside(folder, name).is_file() and file_hash(inside(folder, name)) == value
+                                for name, value in artifacts.items())):
+                    print('已核验同一确认版本的 Word、PDF 和页面摘要，复用完整导出结果。')
+                    return export_key
+            return function(workspace, export_key)
     except Exception as error:
         report = read_json(folder / 'report.json') if (folder / 'report.json').exists() else {}
-        report.update({'state': 'failed', 'ok': False, 'failure_type': type(error).__name__})
+        report.update({'state': 'failed', 'ok': False, 'failure_type': type(error).__name__,
+                       'failure_message': str(error)})
         write_json(folder / 'report.json', report)
         raise
 

@@ -1,10 +1,12 @@
 """Evidence collection, validation, and editable resume drafts."""
 import re
+import os
 from pathlib import Path
 
 from . import prompts
 from .llm import DeepSeekClient
-from .storage import digest, read_json, run_dir, verify_sources, write_json
+from .project_edit import adopt_project_items
+from .storage import digest, file_hash, read_json, run_dir, verify_sources, write_json
 
 FIELDS = {'name', 'email', 'phone', 'education', 'skill', 'project', 'award', 'availability', 'other'}
 
@@ -14,19 +16,39 @@ def question(text, fact_ids=()):
             'fact_ids': list(fact_ids), 'resolution': '', 'note': ''}
 
 
+def source_span(value, source):
+    """Resolve formatting-only whitespace differences to an exact source span."""
+    if not isinstance(value, str) or not value.strip():
+        return None
+    if value in source:
+        return value
+    positions = [i for i, char in enumerate(source) if not char.isspace() and char not in '\u200b\ufeff']
+    compact_source = ''.join(source[i] for i in positions)
+    compact_value = ''.join(char for char in value if not char.isspace() and char not in '\u200b\ufeff')
+    if not compact_value:
+        return None
+    start = compact_source.find(compact_value)
+    if start < 0:
+        return None
+    return source[positions[start]:positions[start + len(compact_value) - 1] + 1]
+
+
 def validate_facts(data: dict, segments: list) -> tuple[list, list]:
     if not isinstance(data, dict) or not isinstance(data.get('facts'), list) or len(data['facts']) > 300:
         raise ValueError('事实输出结构无效或超过 300 项')
     sources = {s['id']: s for s in segments}
     facts, questions, seen = [], [], set()
     for raw in data['facts']:
-        if not isinstance(raw, dict) or raw.get('field') not in FIELDS:
+        if not isinstance(raw, dict) or not isinstance(raw.get('field'), str) or raw['field'] not in FIELDS:
             raise ValueError('事实字段不符合约定')
-        segment = sources.get(raw.get('segment_id'))
+        segment_id = raw.get('segment_id')
+        segment = sources.get(segment_id) if isinstance(segment_id, str) else None
         value, quote = raw.get('value'), raw.get('quote')
         if not segment or not isinstance(value, str) or not value.strip() or len(value) > 3000:
             raise ValueError('事实引用不存在或事实值无效')
-        if not isinstance(quote, str) or quote not in segment['text'] or value not in quote:
+        quote = source_span(quote, segment['text'])
+        value = source_span(value, quote) if quote is not None else None
+        if quote is None or value is None or len(value) > 3000:
             raise ValueError('事实值或引用片段不在原材料中')
         key = (raw['field'], value, segment['id'])
         if key in seen:
@@ -68,6 +90,72 @@ def offline_facts(segments):
     return {'facts': facts}
 
 
+def reconcile_responses(responses, segment):
+    accepted, rejected, issues = [], [], []
+    for response in responses:
+        candidates = response.get('facts') if isinstance(response, dict) else None
+        if not isinstance(candidates, list) or len(candidates) > 300:
+            issues.append({'source': segment['source'], 'reason': f"{segment['location']} / {segment['id']} 模型事实结构未通过校验，请核对原文。"})
+            continue
+        for index, candidate in enumerate(candidates, 1):
+            try:
+                facts, _ = validate_facts({'facts': [candidate]}, [segment])
+                accepted.extend(facts)
+            except ValueError:
+                rejected.append((index, candidate))
+    facts, _ = validate_facts({'facts': accepted}, [segment])
+    resolved = {(fact['field'], fact['value']) for fact in facts}
+    seen = set()
+    for index, candidate in rejected:
+        field = candidate.get('field') if isinstance(candidate, dict) else None
+        field = field if isinstance(field, str) and field in FIELDS else '未知字段'
+        value = candidate.get('value') if isinstance(candidate, dict) else None
+        canonical = source_span(value, segment['text'])
+        identity = (field, digest(value))
+        if (field, canonical) in resolved or identity in seen:
+            continue
+        seen.add(identity)
+        issues.append({'source': segment['source'], 'reason': f"{segment['location']} / {segment['id']} 第{index}项 {field} 未通过来源校验，请核对原文并补充或省略。"})
+    return facts, issues
+
+
+def collect_segment(client, segment, directory):
+    identity = {'segment': segment, 'prompt': prompts.FACTS,
+                'model': os.environ.get('DEEPSEEK_MODEL', 'deepseek-flash')}
+    fingerprint = digest({**identity, 'version': 2})
+    path = directory / 'model-facts' / (segment['id'] + '.json')
+    if path.exists():
+        saved = read_json(path)
+        if saved.get('fingerprint') == fingerprint:
+            facts, _ = validate_facts(saved['output'], [segment])
+            return facts, saved['issues']
+        if saved.get('fingerprint') == digest({**identity, 'version': 1}):
+            # Reconcile earlier checkpoints locally without resending materials.
+            responses = []
+            for attempt in (1, 2):
+                response_path = path.with_name(segment['id'] + f'-attempt-{attempt}.json')
+                if response_path.exists():
+                    responses.append(read_json(response_path))
+            if responses:
+                facts, issues = reconcile_responses(responses, segment)
+                write_json(path, {'fingerprint': fingerprint, 'output': {'facts': facts}, 'issues': issues})
+                return facts, issues
+    payload, responses = {'segments': [segment]}, []
+    for attempt in range(2):
+        result = client.complete(prompts.FACTS, payload)
+        responses.append(result)
+        write_json(path.with_name(segment['id'] + f'-attempt-{attempt + 1}.json'), result)
+        try:
+            validate_facts(result, [segment])
+            break
+        except ValueError as error:
+            payload = {'segments': [segment], 'previous_response': result, 'validation_error': str(error),
+                       'correction': '重新逐字提取。quote 必须从原文连续复制，value 必须从 quote 连续复制，保留空格与换行。不能核对的候选请删除。只返回修正后的 facts JSON。'}
+    facts, issues = reconcile_responses(responses, segment)
+    write_json(path, {'fingerprint': fingerprint, 'output': {'facts': facts}, 'issues': issues})
+    return facts, issues
+
+
 def collect_facts(workspace: Path, run_key: str, mode: str = 'deepseek') -> str:
     verify_sources(workspace, run_key)
     directory = run_dir(workspace, run_key)
@@ -80,11 +168,10 @@ def collect_facts(workspace: Path, run_key: str, mode: str = 'deepseek') -> str:
         output = {'facts': []}
         client = DeepSeekClient() if segments else None
         for segment in segments[:24]:
-            result = client.complete(prompts.FACTS, {'segments': [segment]})
-            # Validate per request before merging; a model may cite only what it received.
-            validate_facts(result, [segment])
-            output['facts'].extend(result['facts'])
-            if not result['facts']:
+            facts, validation_issues = collect_segment(client, segment, directory)
+            output['facts'].extend(facts)
+            issues.extend(validation_issues)
+            if not facts:
                 issues.append({'source': segment['source'], 'reason': f"{segment['location']} / {segment['id']} 未整理出事实，请人工核对该片段"})
         if len(segments) > 24:
             issues.append({'source': 'model_budget', 'reason': f'24 次调用上限，另有 {len(segments)-24} 个片段未整理'})
@@ -106,10 +193,12 @@ def validate_resume(data: dict):
         raise ValueError('请补充有效姓名')
     if not isinstance(data.get('sections'), list) or not data['sections']:
         raise ValueError('简历至少需要一节经历或技能')
-    if not any(c.get('value', '').strip() for c in data.get('contact', [])):
-        raise ValueError('请补充至少一种联系方式')
-    if data.get('photo'):
-        raise ValueError('首版不支持照片，请先使用文字版模板')
+    contacts = data.get('contact', [])
+    if not isinstance(contacts, list) or any(not isinstance(c, dict) or
+                                            not isinstance(c.get('value'), str) for c in contacts):
+        raise ValueError('联系方式结构无效')
+    if data.get('photo') not in (None, '', 'photo.jpg'):
+        raise ValueError('照片引用无效，请重新上传')
     if len(str(data)) > 60000:
         raise ValueError('简历正文超过长度限制')
     for group in data['sections']:
@@ -130,8 +219,26 @@ def draft_resume(workspace: Path, run_key: str, mode: str = 'deepseek') -> str:
     bundle = read_json(directory / 'facts.json')
     if bundle['mode'] != mode:
         raise ValueError('不能混用离线与真实模型结果')
+    extracted = read_json(directory / 'extracted.json')
+    fingerprint = digest({'version': 2, 'facts': bundle, 'config': manifest['config'],
+                          'extracted': extracted,
+                          'mode': mode, 'prompt': prompts.DRAFT,
+                          'model': os.environ.get('DEEPSEEK_MODEL', 'deepseek-flash')})
+    draft_path = directory / 'resume.draft.json'
+    checkpoint_path = directory / 'model-draft.json'
+    try:
+        checkpoint = read_json(checkpoint_path)
+        if (isinstance(checkpoint, dict) and checkpoint.get('fingerprint') == fingerprint
+                and draft_path.is_file() and checkpoint.get('output_sha256') == file_hash(draft_path)):
+            return run_key
+    except (OSError, ValueError):
+        pass
+    # Invalidate before rebuilding so failures cannot revive an earlier checkpoint.
+    checkpoint_path.unlink(missing_ok=True)
     usable = [f for f in bundle['facts'] if f['status'] == 'source_text' and f['ownership'] != 'unknown']
-    narrative = [f for f in usable if f['field'] not in ('name', 'email', 'phone', 'other')]
+    # Project descriptions are grouped deterministically from repository sources.
+    # Unknown ownership remains a review question and never enters model prose.
+    narrative = [f for f in usable if f['field'] not in ('name', 'email', 'phone', 'other', 'project')]
     sections = []
     if mode == 'offline':
         for field, title in [('education', '教育背景'), ('skill', '专业技能'), ('award', '奖项荣誉')]:
@@ -171,5 +278,21 @@ def draft_resume(workspace: Path, run_key: str, mode: str = 'deepseek') -> str:
               'heading_font': 'Noto Sans CJK SC',
               'contact': [{'label': '邮箱' if f['field'] == 'email' else '电话', 'value': f['value'], 'fact_ids': [f['id']]}
                           for f in usable if f['field'] in ('email', 'phone')], 'sections': sections}
-    write_json(directory / 'resume.draft.json', resume)
+    projects = [fact for fact in bundle['facts']
+                if fact['field'] == 'project' and fact['status'] == 'source_text']
+    sources = {}
+    for segment in extracted['segments']:
+        if segment.get('method') != 'ocr':
+            source = segment['source']
+            sources[source] = sources.get(source, '') + '\n' + segment['text']
+    resume = adopt_project_items(resume, projects, sources)
+    project_ids = {fact['id'] for fact in projects if fact['ownership'] == 'unknown'}
+    for section in resume['sections']:
+        for item in section['items']:
+            if project_ids.intersection(item.get('fact_ids', [])):
+                item['pending_contribution'] = True
+                if not item['paragraphs']:
+                    item['paragraphs'] = ['项目描述与本人贡献待补充确认。']
+    write_json(draft_path, resume)
+    write_json(checkpoint_path, {'fingerprint': fingerprint, 'output_sha256': file_hash(draft_path)})
     return run_key

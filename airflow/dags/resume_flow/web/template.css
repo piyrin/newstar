@@ -1,0 +1,46 @@
+/* Three user-supplied reference layouts. Loaded after the workbench UI styles. */
+.paper{--resume-ink:#25272a;--resume-muted:#444;--resume-accent:#253044;display:block;color:var(--resume-ink);font-family:'Microsoft YaHei','Noto Sans CJK SC',sans-serif;line-height:1.65;min-width:0;padding:28px 25px}
+.paper .resume-header,.paper .resume-identity,.paper .resume-contact,.paper .resume-body,.paper .resume-section{min-width:0}
+.paper .resume-header{height:auto;display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.8fr);align-items:center;gap:12px;padding:0;border:0}
+.paper .resume-header.has-photo{grid-template-columns:58px minmax(0,.85fr) minmax(0,1.8fr)}
+.paper .resume-header.no-contact{grid-template-columns:minmax(0,1fr)}
+.paper .resume-header.has-photo.no-contact{grid-template-columns:58px minmax(0,1fr)}
+.paper .resume-header .resume-photo{position:static;width:58px;height:78px;object-fit:contain;object-position:left center;max-width:100%}
+.paper .resume-identity,.paper .resume-identity:has(.resume-photo){padding:0;position:static;min-height:0}
+.paper .resume-header h3{font-size:23px;line-height:1.35;margin:0 0 3px;letter-spacing:0;font-weight:700;text-align:left}
+.paper .resume-header .headline{font-size:10px;line-height:1.5;margin:0;color:var(--resume-muted)}
+.paper .resume-contact{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 10px;margin:0}
+.paper .resume-contact .contact{color:var(--resume-muted);font-size:9px;line-height:1.5;margin:0;overflow-wrap:anywhere}
+.paper .resume-section{margin:16px 0 0;break-inside:auto}
+.paper .resume-section h4{font-family:'SimSun','Noto Serif CJK SC',serif;font-size:12px;font-weight:700;margin:0 0 8px;padding:0 0 4px;line-height:1.6;letter-spacing:0;break-after:avoid;border:0;border-bottom:1px solid #929292;color:var(--resume-ink)}
+.paper .resume-entry+.resume-entry{margin-top:10px}
+.paper .entry-heading{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr) auto;gap:8px;align-items:baseline;margin-bottom:3px;line-height:1.5}
+.paper .entry-heading b{font-size:10px;font-weight:700;line-height:1.5}
+.paper .entry-heading .entry-subtitle{font-size:9px;color:var(--resume-muted);grid-column:2}
+.paper .entry-heading .entry-date{font-size:9px;color:var(--resume-muted);text-align:right;grid-column:3}
+.paper .entry-heading:has(b:only-child){display:block}
+.paper .resume-body p{font-size:10px;margin:3px 0;line-height:1.65}
+.paper .resume-body .entry-url{font-size:9px;overflow-wrap:anywhere;color:var(--resume-muted)}
+.paper .resume-body .bullet{position:relative;padding-left:12px}
+.paper .resume-body .bullet::before{content:'•';position:absolute;left:2px}
+.paper.minimal .resume-section h4{padding:2px 9px;background:#e7e7e7;border:0;border-left:2px solid #25272a}
+.paper.technical{--resume-ink:#253044;--resume-muted:#586780}
+.paper.technical .resume-header{grid-template-columns:minmax(0,1fr);gap:14px}
+.paper.technical .resume-header.has-photo{grid-template-columns:58px minmax(0,1fr)}
+.paper.technical .resume-header h3{font-size:27px;border-left:3px solid var(--resume-accent);padding-left:10px}
+.paper.technical .resume-header .headline{color:#8898b3;font-size:9px;padding-left:13px}
+.paper.technical .resume-contact{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:6px}
+.paper.technical .resume-contact .contact{padding:4px 8px;background:#f7f9fc;border:1px solid #f0f3f8;border-radius:9px}
+.paper.technical .resume-section{margin-top:21px}
+.paper.technical .resume-section h4{border-bottom:1px solid #e3e7ed;padding-left:10px;position:relative;color:var(--resume-ink)}
+.paper.technical .resume-section h4::before{content:'';position:absolute;left:0;top:4px;width:4px;height:13px;border-radius:2px;background:var(--resume-accent)}
+.paper .skills-section .resume-entry+.resume-entry{margin-top:3px}
+.paper .resume-body .compact-skills{line-height:1.5;margin:2px 0}
+.paper.technical .skills-section .section-content{padding:7px 10px;background:#fafbfe;border:1px solid #f6f8fc;border-radius:10px}
+.paper.technical .entry-heading .entry-subtitle{border-left:1px solid #dde3ec;padding-left:7px}
+.paper.technical .entry-heading .entry-date{font-size:8px;padding:1px 5px;background:#f7f9fc;color:#8293ad;border-radius:3px}
+.paper.technical .entry-text{color:var(--resume-muted)}
+.paper.technical .entry-text:has(p:not(.bullet)){border-left:1px solid #dde3ec;padding-left:10px}
+.paper.technical .bullet::before{color:#97a5bd}
+@media(max-width:480px){.paper{padding:22px 18px}.paper .resume-header.has-photo{grid-template-columns:50px minmax(0,1fr)}.paper .resume-header.has-photo .resume-contact{grid-column:1/-1}.paper .resume-contact{gap:5px}.paper .entry-heading{grid-template-columns:minmax(0,1fr) auto}.paper .entry-heading .entry-subtitle{grid-column:1;grid-row:2}.paper .entry-heading .entry-date{grid-column:2;grid-row:1}}
+@media print{.paper{box-shadow:none;border:0}.paper *{print-color-adjust:exact;-webkit-print-color-adjust:exact}}

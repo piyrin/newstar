@@ -83,6 +83,13 @@ def execute_request(workspace: Path, plan: dict, request_id=None, dry_run=False,
     if dry_run:
         return {'state': 'dry_run', **summary}
     client = api or AirflowClient()
+    if plan['action'] == 'export':
+        from .flow_control import submit_reviewed_export
+        result = submit_reviewed_export(workspace, conf['run_key'], request_id, client)
+        return {**result, 'request_id': request_id,
+                'plan': {'dag_id': result['dag_id'], 'conf': {'run_key': conf['run_key'], 'export_key': result['export_key']}},
+                'message': '已提交人工确认，查询本次工作流可查看后续导出进度',
+                'url': client.base + '/dags/' + result['dag_id'] + '/runs/' + result['dag_run_id']}
     run = client.trigger(plan['dag_id'], run_id, conf)
     return {**summary, 'state': run.get('state'),
             'message': '已提交；queued 不等于任务完成，请继续查询状态',

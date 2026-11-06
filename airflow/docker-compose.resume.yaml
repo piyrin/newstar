@@ -30,3 +30,29 @@ services:
     <<: *resume-common
   airflow-cli:
     <<: *resume-common
+  resume-portal:
+    <<: *resume-common
+    command: ["python", "-m", "resume_flow.portal"]
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8765:8765"
+    environment:
+      PYTHONPATH: /opt/airflow/dags
+      RESUME_WORKSPACE: /opt/airflow/resume_workspace
+      RESUME_PORTAL_BIND: 0.0.0.0
+      AIRFLOW_API_URL: http://airflow-apiserver:8080
+      AIRFLOW_API_USERNAME: ${AIRFLOW_API_USERNAME:-${_AIRFLOW_WWW_USER_USERNAME:-airflow}}
+      AIRFLOW_API_PASSWORD: ${AIRFLOW_API_PASSWORD:-${_AIRFLOW_WWW_USER_PASSWORD:-airflow}}
+      AIRFLOW_API_TOKEN: ${AIRFLOW_API_TOKEN:-}
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
+    volumes:
+      - ./dags:/opt/airflow/dags:ro
+      - ./resume_workspace:/opt/airflow/resume_workspace
+    depends_on:
+      airflow-apiserver:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8765/')"]
+      interval: 20s
+      timeout: 5s
+      retries: 3

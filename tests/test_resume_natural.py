@@ -162,6 +162,18 @@ class ApiTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             AirflowClient(base_url='http://example.com', username='u', password='p')
 
+    def test_long_lived_password_client_reauthenticates_once_on_expiry(self):
+        self.client.token = 'expired'
+        result = self.client._send('GET', '/api/v2/dags/resume_prepare')
+        self.assertFalse(result['is_paused'])
+        self.assertEqual(sum(path == '/auth/token' for _, path, _, _ in self.requests), 1)
+
+    def test_static_token_does_not_silently_switch_identity(self):
+        client = AirflowClient(base_url=self.client.base, username='u', password='p', token='expired')
+        with self.assertRaisesRegex(ValueError, '401'):
+            client._send('GET', '/api/v2/dags/resume_prepare')
+        self.assertFalse(any(path == '/auth/token' for _, path, _, _ in self.requests))
+
 
 if __name__ == '__main__':
     unittest.main()

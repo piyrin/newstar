@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>简历工作台 · 整理材料</title><link rel="stylesheet" href="/portal.css"><script defer src="/portal.js"></script></head>
+<body>
+<header class="site-header"><a class="brand" href="/">履历 / RESUME</a><span class="local"><i aria-hidden="true"></i> 本机工作台 · localhost:8765 <span id="guide-status"></span></span></header>
+<main>
+  <section class="intro"><p class="eyebrow">从材料，到你的第一份简历</p><h1>把经历整理好，<br>让下一步更清晰。</h1><p>选择已有材料，整理成有来源的草稿；核对、编辑后，再确认导出。</p></section>
+  <nav class="steps" aria-label="制作步骤"><strong><b>01</b> 整理材料</strong><span><b>02</b> 人工审阅</span><span><b>03</b> 导出与下载</span></nav>
+  <section id="intake-panel" class="import-panel" hidden><div class="section-head"><h2>本次流程 · 填写材料</h2><span id="intake-state" class="badge">等待提交材料</span></div><p id="intake-description"></p><p class="hint">把材料拖入下方，或导入 GitHub。导入完成后填写岗位，点击“提交材料并继续”。Airflow 会从等待步骤继续。</p><a id="intake-replacement" class="text-link" hidden>打开最新材料入口 →</a><button id="intake-cancel" type="button" class="quiet-button">结束本次等待</button></section>
+  <section id="pending-inputs" class="import-panel" hidden><h2>等待你提交材料的流程</h2><ul id="pending-input-list" class="draft-list"></ul></section>
+  <section class="import-panel" aria-labelledby="import-heading">
+    <div class="section-head"><h2 id="import-heading">导入你的材料</h2><span>文件保存在本机案例目录</span></div>
+    <form id="import-form">
+      <div class="import-target"><label for="import-case">导入到<select id="import-case"><option value="">新建材料案例</option></select></label><label id="new-case-label" for="new-case">新案例文件夹名<input id="new-case" maxlength="80" pattern="[A-Za-z0-9][A-Za-z0-9_\-]{0,79}" placeholder="例如 my-resume" autocomplete="off" required aria-describedby="import-case-hint"></label></div>
+      <p id="import-case-hint" class="hint">新建名称以英文字母或数字开头，支持 1–80 位英文字母、数字、下划线和连字符。</p>
+      <div id="drop-zone" class="drop-zone"><span class="drop-symbol" aria-hidden="true">↓</span><strong>将材料拖到这里</strong><span>或 <button id="choose-files" type="button" class="quiet-button">选择多个文件</button></span><input id="import-files" type="file" multiple accept=".txt,.md,.docx,.pdf,.png,.jpg,.jpeg" hidden><p class="hint">TXT / Markdown / Word / PDF / PNG / JPG · 单个最多 5 MB，总计 20 MB，最多 100 个文件。请直接选择文件。</p></div>
+      <ul id="selected-files" class="import-files" aria-label="待导入文件"></ul>
+      <div class="import-actions"><button id="import-button" type="submit" disabled>导入到本机</button><button id="clear-files" type="button" class="quiet-button" hidden>清空选择</button></div>
+      <p class="hint">导入只传到本机工作台。同名且内容相同会跳过，同名文件内容变化会更新，旧文件保留备份。选择 DeepSeek 开始整理时，才会发送提取的文字。</p>
+      <p id="import-status" class="message" role="status" aria-live="polite"></p><ul id="import-results" class="import-files" aria-label="导入结果"></ul>
+    </form>
+  </section>
+  <section class="import-panel" aria-labelledby="github-heading">
+    <div class="section-head"><h2 id="github-heading">从 GitHub 导入项目</h2><span>公开仓库 · 保留来源快照</span></div>
+    <p class="hint">使用上方“导入到”选择的材料案例，也可填写新案例名称。读取 README、目录和常见配置作为项目材料，本人贡献需要你核实。</p>
+    <form id="github-form"><div class="github-grid"><label for="github-url">GitHub 仓库链接<input id="github-url" type="url" required placeholder="https://github.com/owner/repo" autocomplete="url"></label><label for="github-ref">分支 / 标签 / commit（可选）<input id="github-ref" placeholder="留空使用默认分支" maxlength="200"></label><label for="github-contribution">本人贡献说明（可选）<textarea id="github-contribution" rows="3" maxlength="10000" placeholder="填写你实际负责的工作，导入后仍需核实"></textarea></label></div><button id="github-button" type="submit">导入 GitHub 项目</button>
+    <p class="hint">导入仅在本机工作台与 GitHub 之间进行。选择 DeepSeek 开始整理时才会发送提取的文字。私有仓库需在后端配置访问凭证。</p><p id="github-status" class="message" role="status" aria-live="polite"></p><ul id="github-results" class="import-files" aria-label="GitHub 导入结果"></ul></form>
+  </section>
+  <section class="prepare" aria-labelledby="prepare-heading">
+    <div class="section-head"><h2 id="prepare-heading">开始一份草稿</h2><span id="prepare-note">使用本机已放好的材料</span></div>
+    <form id="prepare-form">
+      <div class="form-grid">
+        <label for="case-id">材料案例<select id="case-id" required disabled><option value="">正在读取案例…</option></select></label>
+        <label for="target">目标岗位（可选）<input id="target" name="target" maxlength="200" placeholder="例如：AI 应用开发实习生" autocomplete="off"></label>
+        <label for="mode">整理方式<select id="mode"><option value="deepseek">DeepSeek · 根据材料起草</option><option value="offline">离线演示 · 虚构样例</option></select></label>
+        <button id="prepare-button" type="submit" disabled>开始整理 <span aria-hidden="true">↗</span></button>
+      </div>
+      <label for="jd">岗位要求（可选）<textarea id="jd" maxlength="20000" rows="3" placeholder="没有可留空"></textarea></label>
+      <p id="mode-note" class="hint">DeepSeek 会接收材料中提取的文字，整理事实并起草正文。请先确认材料适合发送。</p>
+      <p class="hint">填写网页参数会直接通过 API 启动 Airflow 流程。自然语言入口还会由模型选择 DAG。整理、等待人工审阅和生成文件在同一流程中继续。</p>
+      <p id="case-note" class="hint" hidden>暂无可用案例。请先在上方导入材料。</p>
+      <p id="submit-status" class="message" role="status" aria-live="polite"></p>
+    </form>
+  </section>
+  <section id="active-section" class="active-panel" aria-labelledby="active-heading" hidden>
+    <div class="section-head"><h2 id="active-heading">正在整理材料</h2><span id="active-state" class="badge">等待开始</span></div>
+    <p id="active-description" class="hint"></p><ol id="task-list" class="task-list"></ol>
+    <p id="active-error" class="message error" role="status" hidden></p>
+    <div class="active-actions"><a id="active-review" class="text-link" hidden>进入人工审阅 →</a><a id="active-airflow" class="subtle-link" href="http://localhost:8080" target="_blank" rel="noopener noreferrer">在 Airflow 查看运行 ↗</a></div>
+  </section>
+  <section class="drafts" aria-labelledby="draft-heading">
+    <div class="section-head"><div class="heading-group"><h2 id="draft-heading">近期草稿</h2><span id="draft-count" class="count">—</span></div><button id="refresh" type="button" class="quiet-button">刷新列表 ↻</button></div>
+    <p id="jobs-status" class="message" role="status" aria-live="polite">正在读取草稿…</p>
+    <div id="empty-drafts" class="empty" hidden><span aria-hidden="true">＋</span><div><h3>从第一份材料开始</h3><p>完成上方选择后点击“开始整理”，草稿会出现在这里。</p></div></div>
+    <ul id="draft-list" class="draft-list" aria-label="近期简历草稿"></ul>
+    <p id="draft-action-status" class="message" role="status" aria-live="polite"></p>
+    <details id="draft-trash" hidden><summary>已删除草稿 <span id="trash-count"></span></summary><p class="hint">可以恢复草稿。已结束的工作流在恢复后可重新提交。</p><ul id="trash-list" class="draft-list"></ul></details>
+  </section>
+</main>
+<footer><span>材料在本机管理 · 每份简历都需人工确认</span><a href="http://localhost:8080" target="_blank" rel="noopener noreferrer">打开 Airflow ↗</a></footer>
+</body></html>
