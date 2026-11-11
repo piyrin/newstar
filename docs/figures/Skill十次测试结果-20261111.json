@@ -1,0 +1,25 @@
+{
+  "source": "D:\\code\\newstar\\tmp\\skill-boundary-v2\\ten-trial-status-20261111.json",
+  "source_sha256": "fe977e8394a742136bb8ebda933ab86541f7b656600ff12d745472a1a345011f",
+  "verified_correct": [
+    6,
+    2
+  ],
+  "content_incorrect": [
+    3,
+    5
+  ],
+  "unresolved_ambiguity": [
+    1,
+    0
+  ],
+  "context_failure": [
+    0,
+    3
+  ],
+  "sizes": [
+    100,
+    166
+  ],
+  "denominator_each": 10
+}
