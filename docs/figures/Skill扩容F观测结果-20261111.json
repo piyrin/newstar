@@ -1,0 +1,80 @@
+{
+  "scope": "Completed original F batches and stability-refinement observations; latest N60 adjudication applied, N80 ambiguous excluded from confirmed correct",
+  "observations": [
+    {
+      "context": 32768,
+      "candidate_skills": 10,
+      "raw_passed": 3,
+      "verified_correct": 1,
+      "planned": 3,
+      "source": "tmp\\skill-boundary-v2\\progressive\\boundary-repeatqualified-166-f32-stability-refinement\\effective-status-20261111.json",
+      "source_sha256": "82cb2e3488b0db432d52764a97cade4e9c6680c3da10ec5aec5978d40106a27b"
+    },
+    {
+      "context": 32768,
+      "candidate_skills": 40,
+      "raw_passed": 3,
+      "verified_correct": 1,
+      "planned": 3,
+      "source": "tmp\\skill-boundary-v2\\progressive\\boundary-repeatqualified-166-f32-stability-refinement\\effective-status-20261111.json",
+      "source_sha256": "82cb2e3488b0db432d52764a97cade4e9c6680c3da10ec5aec5978d40106a27b"
+    },
+    {
+      "context": 32768,
+      "candidate_skills": 60,
+      "raw_passed": 2,
+      "verified_correct": 2,
+      "planned": 3,
+      "source": "tmp\\skill-boundary-v2\\progressive\\boundary-repeatqualified-166-f32-stability-refinement\\effective-status-20261111.json",
+      "source_sha256": "82cb2e3488b0db432d52764a97cade4e9c6680c3da10ec5aec5978d40106a27b"
+    },
+    {
+      "context": 32768,
+      "candidate_skills": 80,
+      "raw_passed": 1,
+      "verified_correct": 0,
+      "planned": 3,
+      "source": "tmp\\skill-boundary-v2\\progressive\\boundary-repeatqualified-166-f32-stability-refinement\\effective-status-20261111.json",
+      "source_sha256": "82cb2e3488b0db432d52764a97cade4e9c6680c3da10ec5aec5978d40106a27b"
+    },
+    {
+      "context": 32768,
+      "candidate_skills": 100,
+      "raw_passed": 3,
+      "verified_correct": 1,
+      "planned": 3,
+      "source": "tmp\\skill-boundary-v2\\progressive\\boundary-repeatqualified-166-f32\\effective-status-20261110.json",
+      "source_sha256": "98248b6a833b5113ddaefebb4c03a34b6b7124a23fc7f9f40b117b6be505036f"
+    },
+    {
+      "context": 32768,
+      "candidate_skills": 166,
+      "raw_passed": 2,
+      "verified_correct": 1,
+      "planned": 3,
+      "source": "tmp\\skill-boundary-v2\\progressive\\boundary-repeatqualified-166-f32\\effective-status-20261110.json",
+      "source_sha256": "98248b6a833b5113ddaefebb4c03a34b6b7124a23fc7f9f40b117b6be505036f"
+    },
+    {
+      "context": 40960,
+      "candidate_skills": 100,
+      "raw_passed": 3,
+      "verified_correct": 1,
+      "planned": 3,
+      "source": "tmp\\skill-boundary-v2\\progressive\\boundary-repeatqualified-166-f40\\effective-status-20261110.json",
+      "source_sha256": "450b3750e7af8a6aab99f36fe3c7298f84ec08f203b3af2951d0a775228e8eb6"
+    },
+    {
+      "context": 40960,
+      "candidate_skills": 166,
+      "raw_passed": 2,
+      "verified_correct": 1,
+      "planned": 3,
+      "source": "tmp\\skill-boundary-v2\\progressive\\boundary-repeatqualified-166-f40\\effective-status-20261110.json",
+      "source_sha256": "450b3750e7af8a6aab99f36fe3c7298f84ec08f203b3af2951d0a775228e8eb6"
+    }
+  ],
+  "case_count_per_batch": 1,
+  "seeds_per_batch": 3,
+  "minimum_control_still_running": true
+}
