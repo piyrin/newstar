@@ -68,6 +68,7 @@ def make_portal(workspace, port=0, host='127.0.0.1', fixed_run_key=None, api=Non
     token, lock = secrets.token_urlsafe(32), threading.Lock()
     assets = Path(__file__).parent / 'web'
     client = api or AirflowClient()
+    from . import skill_jobs
 
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *args):
@@ -159,7 +160,8 @@ def make_portal(workspace, port=0, host='127.0.0.1', fixed_run_key=None, api=Non
             path = urlsplit(self.path).path
             static = {'/': 'index.html' if fixed_run_key else 'portal.html', '/review': 'index.html',
                       '/app.js': 'app.js', '/style.css': 'style.css', '/template.css': 'template.css',
-                      '/portal.js': 'portal.js', '/portal.css': 'portal.css'}
+                      '/portal.js': 'portal.js', '/portal.css': 'portal.css',
+                      '/skills': 'skills.html', '/skills.js': 'skills.js', '/skills.css': 'skills.css'}
             if path in static:
                 name = static[path]
                 mime = {'html': 'text/html', 'js': 'text/javascript', 'css': 'text/css'}[name.rsplit('.', 1)[1]]
@@ -174,7 +176,21 @@ def make_portal(workspace, port=0, host='127.0.0.1', fixed_run_key=None, api=Non
             if not self.authorized():
                 return
             try:
-                if path == '/api/jobs':
+                if path == '/api/skills/catalog':
+                    result = skill_jobs.catalog(workspace)
+                elif path == '/api/skills/job':
+                    result = skill_jobs.detail(workspace, self.query().get('job_id'), client)
+                elif path == '/api/skills/file':
+                    q = self.query()
+                    target = skill_jobs.download(workspace, q.get('job_id'), q.get('name'))
+                    if q.get('preview') == '1':
+                        if target.stat().st_size > 2_000_000:
+                            raise ValueError('文件较大，请下载查看')
+                        self.send(200, {'name': target.name, 'content': target.read_text(encoding='utf-8-sig')})
+                    else:
+                        self.send(200, target.read_bytes(), 'application/octet-stream', target.name)
+                    return
+                elif path == '/api/jobs':
                     result = jobs(workspace)
                 elif path == '/api/intakes':
                     result = {'intakes': list_intakes(workspace)}
@@ -249,7 +265,11 @@ def make_portal(workspace, port=0, host='127.0.0.1', fixed_run_key=None, api=Non
                 with lock, (draft_guard(workspace, key) if key else nullcontext()):
                     if key:
                         ensure_active(workspace, key)
-                    if path == '/api/draft-delete':
+                    if path == '/api/skills/start':
+                        result = skill_jobs.start(workspace, payload, client)
+                    elif path == '/api/skills/review':
+                        result = skill_jobs.record_review(workspace, payload.get('job_id'), payload)
+                    elif path == '/api/draft-delete':
                         result = delete_draft(workspace, validate_id(payload.get('run_key')), client)
                     elif path == '/api/draft-restore':
                         result = restore_draft(workspace, validate_id(payload.get('run_key')))

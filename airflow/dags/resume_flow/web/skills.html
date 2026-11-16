@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Skill 编排实验 · 本机工作台</title><link rel="stylesheet" href="/skills.css"><script defer src="/skills.js"></script></head>
+<body>
+<header><a class="brand" href="/">NEWSTAR / 工作台</a><nav aria-label="工作台导航"><a href="/">简历流程</a><a href="/skills" aria-current="page">Skill 编排实验</a><a href="http://localhost:8080" target="_blank" rel="noopener">Airflow ↗</a></nav></header>
+<main>
+  <section class="intro"><p class="eyebrow">第二次实验 · 自然语言驱动工作流</p><h1>从一个需求，<br>到一条真实的调用链。</h1><p>选择候选规模，交给模型自主编排。在同一次运行中查看 Airflow 状态、实际产物与核验记录。</p><p id="bridge-status" role="status">正在连接执行桥…</p></section>
+  <p id="page-error" role="alert" hidden></p>
+  <section id="boundary-overview" class="panel" aria-labelledby="boundary-heading">
+    <div class="section-heading"><h2 id="boundary-heading">本地模型与 DeepSeek 的实测边界</h2><a href="#recording-heading">查看实验结果 ↓</a></div>
+    <p>本实验增加的是候选 Skill 数 N。实际调用种数 K、业务节点和依赖链另行统计。正确数采用最终内容复核，失败与歧义保留在分母。</p>
+    <div id="boundary-models" class="boundary-models" aria-live="polite"><p>正在读取实测记录…</p></div>
+    <p class="hint">本地与云端的模型、上下文、自动审查配置和批次均有差异。以下结果分别说明各自条件下的观测。</p>
+  </section>
+  <section class="panel" aria-labelledby="recording-heading">
+    <div class="section-heading"><h2 id="recording-heading">实验结果与证据</h2><a href="#cohort-heading">查看全部实验组 ↓</a></div>
+    <p class="hint">已归档运行的内容复核、实际调用规模、失败位置与改进验证。</p>
+    <div class="recording-grid">
+      <article><h3>正确运行与交付文件</h3><p>N166 候选中实际调用2种 Skill，生成2个业务节点，最长链2。正式文件已通过六项内容复核。</p><button type="button" data-job="3df8e6e13ec348f886e6889007ead0d4">打开正确运行与实际文件</button></article>
+      <article><h3>逐级扩容与多轮结果</h3><p>在同一 CourseDock 任务下增加候选规模。32k 小档各3次，100与166各10次，170与180各3次。逐组展开查看每一次结果。失败和歧义均保留在分母。</p><a href="#cohort-heading">查看规模、正确数与逐次记录 ↓</a></article>
+      <article><h3>失败位置与原因</h3><p>N5 已有事实扩写错误，N60 出现修订后仍提交旧 CSV、16轮预算耗尽。N170 出现未知地址补造漏检。终稿、审查记录和控制反馈保留了具体失败位置。</p><div class="actions"><button type="button" data-job="history-local-32768-5-2">N5 内容失败</button><button type="button" data-job="history-local-32768-60-3">N60 修订失败</button><button type="button" data-job="history-local-32768-170-2">N170 地址漏检</button></div></article>
+      <article><h3>改进验证与适用范围</h3><p>同一32849-token请求仅改变上下文容量，32k两次失败、40k两次返回审阅调用。完整任务100与166在40k各1/3通过，166仍有41226-token超限。候选数量的稳定上限尚待定位。</p><div class="actions"><button type="button" data-job="history-context-controls-20261112">打开容量对照原始证据</button><button type="button" data-job="history-local-40960-166-1">40k 完整任务后续失败</button></div></article>
+      <article><h3>DeepSeek 新测 · 两组各十次</h3><p>本轮100候选复核正确2/10，含3次歧义；180候选正确3/10，含1次歧义。两组自动核验均10/10，通过后仍逐份阅读终稿，失败与歧义全部保留。每组具体K、节点、链长和原始回复见运行详情。</p><div class="actions"><button type="button" data-job="deepseek-20261113-n100-03">新测100正确样例</button><button type="button" data-job="deepseek-20261113-n180-09">新测180正确样例</button></div></article>
+      <article><h3>DeepSeek 新测 · 具体失败位置</h3><p>默认端口未知，无法推断4177与默认值的关系。安装方式未知，无法排除pip、uv。对应终稿原句和六项内容复核记录见下方样例。</p><div class="actions"><button type="button" data-job="deepseek-20261113-n100-07">未知默认端口被否定</button><button type="button" data-job="deepseek-20261113-n180-08">未知安装方式被否定</button><button type="button" data-job="deepseek-20261113-n100-09">建议规则前后冲突</button></div></article>
+    </div>
+    <details><summary>32k / 40k 受控重复结果</summary><div id="context-results"></div><p>同一请求在40k容量下恢复返回，完整任务仍有内容错误和后续超限。本批完整任务正确率提升尚待验证，候选数量的稳定临界范围仍待进一步实验。</p></details>
+    <details><summary>已实施的审查改进与尚待验证项</summary><p>事实来源约束、不可变引用和真实审查反馈已进入执行流程。N170/seed2把未知服务地址补成 localhost，原检查漏掉“访问”措辞。独立G变体扩展本地地址断言识别，保留否定和条件建议处理，7项针对性测试和127项回归在原记录中通过。当前 Web 仍使用冻结F，G的整体任务收益待受控新运行测量。</p><button type="button" data-job="history-context-controls-20261112">打开 G 改进说明与红绿测试证据</button></details>
+    <details><summary>容量估算附录 · 5000～6500候选尚未实测</summary><p>官方当前标示 deepseek-flash 为1M上下文。本项目首请求实测 N100 输入17627 tokens、N180 输入30217 tokens，局部外推每增加候选约157 tokens。为执行历史与输出预留空间后，约5000～6500候选可作为未来容量探测范围。这是当前目录格式的容量估算，业务稳定失败数量仍待实测。当前具有资格证据的不同真实来源库为180。两组新测100与180各十次覆盖现有库范围。</p><p>选择干扰、内容错误、16轮预算与历史增长均影响完整任务成败。现有证据无法确定 DeepSeek 会从哪个数量开始稳定失败。</p><a href="https://api-docs.deepseek.com/quick_start/pricing/" target="_blank" rel="noopener">DeepSeek 官方模型与上下文说明 ↗</a></details>
+  </section>
+  <section class="panel" aria-labelledby="start-heading"><div class="section-heading"><h2 id="start-heading">发起一次实验</h2><span>新运行独立归档</span></div>
+    <form id="experiment-form">
+      <label for="request">自然语言需求</label><textarea id="request" rows="4" maxlength="10000" required></textarea>
+      <div class="config"><label>候选 Skill 数<select id="size"><option value="166">166 个</option><option value="100">100 个</option><option value="180">180 个 · 已验收扩容库</option></select></label><label>执行模型<select id="backend"><option value="local">本地 Qwen3.5:9b · 32k</option><option value="deepseek">DeepSeek API · deepseek-flash</option></select></label><label>本地 seed<input id="seed" type="number" min="1" max="100000" value="3" required></label></div>
+      <p id="model-note" class="hint">本地模型执行。每次最多 16 轮规划，采用选中 Skill 全文和真实上游正文。</p>
+      <label id="cost-label" class="check" hidden><input id="accept-cost" type="checkbox">我确认本次 API 费用，同意发送公开的虚构用例、Skill 原文及产物。</label>
+      <details><summary>查看固定项目事实与六项标准</summary><pre id="case-facts"></pre></details>
+      <div class="actions"><button id="start-button" type="submit">提交到 Airflow <span aria-hidden="true">↗</span></button><button id="reset-request" class="quiet" type="button">恢复原实验需求</button><span id="submit-status" role="status"></span></div>
+    </form>
+  </section>
+  <p id="selection-status" role="status" hidden></p>
+  <section id="active" class="panel" hidden aria-labelledby="active-heading"><div class="section-heading"><h2 id="active-heading">本次运行</h2><span id="phase" class="badge"></span></div><p id="job-id" class="mono"></p>
+    <section id="run-outcome" class="run-outcome" aria-labelledby="outcome-heading" aria-live="polite">
+      <div><p class="outcome-label">正确性结论</p><h3 id="outcome-heading"></h3><p id="outcome-summary"></p></div>
+      <button id="outcome-action" class="quiet" type="button" hidden></button>
+    </section>
+    <p id="run-note" class="hint"></p><a id="airflow-link" target="_blank" rel="noopener">在 Airflow 查看这次运行 ↗</a><ol id="airflow-tasks" class="tasks"></ol><p id="run-error" role="status" hidden></p>
+    <section id="judgment" class="judgment" aria-labelledby="judgment-heading" hidden>
+      <h3 id="judgment-heading">内容复核与证据</h3><p id="judgment-verdict" class="judgment-verdict"></p>
+      <h4>判断依据</h4><p id="judgment-standard"></p><h4>复核结论</h4><p id="judgment-reason"></p>
+      <ul id="judgment-criteria" class="criteria-results"></ul>
+      <h4>真实文件中的对应位置</h4><p id="judgment-verification" role="status"></p><div id="judgment-evidence"></div>
+      <a href="#boundary-heading">返回模型边界总览 ↑</a>
+    </section>
+    <div id="metrics" class="metrics"></div>
+    <p class="hint">实际调用规模与上游文件引用关系。</p>
+    <h3>实际 Skill 调用与依赖</h3><ol id="skill-dag" class="dag"></ol><p id="progress-note" class="hint"></p>
+    <h3>最终文件</h3><p class="hint">本次正式提交的正文与附件。</p><ul id="files" class="files"></ul><pre id="preview" class="preview" hidden></pre>
+    <h3>失败定位与内容裁定</h3><ul id="review-evidence" class="files"></ul>
+    <details><summary>原始请求、回复与审查证据</summary><ul id="evidence-files" class="files"></ul></details>
+    <details><summary>主机执行日志</summary><pre id="execution-log"></pre></details>
+    <section id="review-section" hidden><h3>人工六项内容复核</h3><p id="review-state" class="hint"></p><p id="review-explanation"></p><form id="review-form"><div id="review-checks"></div><label for="review-notes">复核说明<textarea id="review-notes" rows="2" maxlength="10000" placeholder="记录核对的文件、内容或失败位置"></textarea></label><button type="submit">保存复核记录</button><p id="review-message" role="status"></p></form></section>
+  </section>
+  <section class="panel" aria-labelledby="cohort-heading"><div class="section-heading"><h2 id="cohort-heading">逐级扩容与重复测量</h2><span>点击每组逐次查看</span></div><p class="hint">正确数采用最终内容复核。N为候选数，K、节点和链长见每条运行。32k与40k分组展示。DeepSeek使用legacy审查，各组配置和分母见卡片。单次180云端观测保留歧义，计0/1。网页新运行见下表。</p><div id="cohorts" class="cohorts"></div></section>
+  <section class="panel" aria-labelledby="history-heading"><div class="section-heading"><h2 id="history-heading">运行记录</h2><label>显示<select id="history-filter"><option value="web">网页新运行</option><option value="all">全部记录</option><option value="local">历史本地</option><option value="deepseek">历史 DeepSeek</option><option value="diagnostic">集成异常用例</option></select></label></div><div class="table-wrap"><table><thead><tr><th>运行标识</th><th>模型 / 候选数</th><th>执行状态</th><th>内容复核</th><th>结果</th></tr></thead><tbody id="history"></tbody></table></div></section>
+</main><footer><span>网页提交 → Airflow 调度 → 主机执行 → 实文件核验</span><a href="/">返回简历工作台 →</a></footer>
+</body></html>

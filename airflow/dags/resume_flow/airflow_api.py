@@ -5,7 +5,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 
-ALLOWED_DAGS = {'resume_start', 'resume_prepare', 'resume_export'}
+ALLOWED_DAGS = {'resume_start', 'resume_prepare', 'resume_export', 'skill_experiment'}
 
 
 class ApiError(ValueError):
