@@ -6,7 +6,7 @@
 
 - [第一轮 · Airflow 与简历工作流](01-airflow-resume/README.md)
 - [第二轮 · Skill 扩容与编排](02-skill-orchestration/README.md)
-- [第三轮 · Dr.Spider 与 Agent 任务澄清](03-dr-spider/README.md)
+- [第三轮 · Dr.Spider 数据集入门与 Agent 准备](03-dr-spider/README.md)
 
 ## 现有目录的用途
 
@@ -36,4 +36,6 @@
 
 ## 第三轮后续资料放置约定
 
-任务说明与学习记录先集中在 `tasks/03-dr-spider/`。项目入口已按用户更正为 `ymxiong/rsi-data-visual`。待开始实际实验时，再根据该项目的目录和依赖安排代码、数据与结果位置。外部代码版本、数据版本、基线配置和评测方式会在开始实验时记录。
+任务说明与学习记录集中在 `tasks/03-dr-spider/`。当前核对的项目入口包括 `ymxiong/rsi-data` 的 `dev_main` 分支，以及用户补充的 `ymxiong/rsi-data-visual`。前者已可读取可视化核心代码，后者当前仍返回空仓库。后续 Agent 集成入口需结合老师安排确认。
+
+Dr.Spider 官方压缩包与来源清单位于 `output/dr-spider/source/`，解压数据位于 `output/dr-spider/data/`，初步盘点位于 `output/dr-spider/inventory.json`。这些本地数据由现有 `/output/` 规则忽略。来源版本、校验信息与第一条样本的讲解见[数据概览与第一课](03-dr-spider/数据概览与第一课.md)。

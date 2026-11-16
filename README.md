@@ -6,9 +6,9 @@
 | --- | --- | --- |
 | 第一轮 | Airflow、Skill 集成、自然语言驱动简历工作流 | [第一轮资料](tasks/01-airflow-resume/README.md) |
 | 第二轮 | Skill 扩容、自主编排、网页接入与实验复核 | [第二轮资料](tasks/02-skill-orchestration/README.md) |
-| 第三轮 | Dr.Spider、基线实验、rsi-data-visual 与 Agent | [第三轮任务说明](tasks/03-dr-spider/README.md) |
+| 第三轮 | Dr.Spider、基线实验、rsi-data / rsi-data-visual 与 Agent | [第三轮任务说明](tasks/03-dr-spider/README.md) |
 
-[项目文件夹导航与整理说明](tasks/README.md)汇总源码、报告、证据和提交材料的位置。第三轮当前处于任务澄清阶段，后续教学顺序见[知识准备路线](tasks/03-dr-spider/学习路线.md)。
+[项目文件夹导航与整理说明](tasks/README.md)汇总源码、报告、证据和提交材料的位置。第三轮已开始数据集入门，见[数据概览与第一课](tasks/03-dr-spider/数据概览与第一课.md)和[知识准备路线](tasks/03-dr-spider/学习路线.md)。
 
 以下保留前两轮的阶段记录。服务状态、提交情况和实验结论请结合各轮入口注明的时间与证据查看。
 
