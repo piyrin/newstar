@@ -28,6 +28,7 @@ dist/
 # Airflow runtime data and personal resume materials.
 /airflow/logs/
 /airflow/resume_workspace/
+/airflow/browser-guide.lock
 
 # Local experiment runs, generated exports, and reproduction bundles.
 /tmp/
